@@ -39,11 +39,11 @@ Attention-Tracker/
 ### Supported models
 
 `llama3_8b-attn`, `mistral_7b-attn`, `granite3_8b-attn`, `qwen2-attn`,
-`gemma2_9b-attn`, `phi3-attn` (configs in `configs/model_configs/`).
+`gemma2_9b-attn`(configs in `configs/model_configs/`).
 
 ### Supported datasets
 
-`bgl`, `spirit` (= **Liberty** in the report), `thunderbird`. Single-line and
+`bgl`, `spirit`, `thunderbird`. Single-line and
 windowed (multi-line sequence) modes are both supported.
 
 ---
