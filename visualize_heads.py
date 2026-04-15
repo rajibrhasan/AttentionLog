@@ -51,23 +51,26 @@ def plot_divergence_heatmap(normal_heatmaps, anomaly_heatmaps, save_path, model_
 
 
 def plot_difference_heatmap(normal_heatmaps, anomaly_heatmaps, save_path, model_name, dataset, important_heads=None):
-    """Plot difference heatmap (normal - anomaly) with selected heads highlighted."""
+    """Plot std-penalized divergence heatmap (matches head-selection score)
+    with selected heads highlighted."""
     normal_mean = np.mean(normal_heatmaps, axis=0)
     anomaly_mean = np.mean(anomaly_heatmaps, axis=0)
-    diff = normal_mean - anomaly_mean
+    normal_std = np.std(normal_heatmaps, axis=0)
+    anomaly_std = np.std(anomaly_heatmaps, axis=0)
+    diff = (normal_mean - anomaly_mean) - (normal_std + anomaly_std)
 
     n_layers, n_heads = diff.shape
     vmax = max(abs(diff.min()), abs(diff.max()))
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     im = ax.imshow(diff, aspect='auto', cmap='RdBu_r', vmin=-vmax, vmax=vmax)
-    ax.set_title(f'Attention Difference (Normal - Anomaly)\n{model_name} on {dataset}', fontsize=14, fontweight='bold')
+    ax.set_title(f'Divergence Score: (Normal − Anomaly) − (σ_N + σ_A)\n{model_name} on {dataset}', fontsize=14, fontweight='bold')
     ax.set_xlabel('Heads', fontsize=13)
     ax.set_ylabel('Layers', fontsize=13)
     ax.set_xticks(range(0, n_heads, max(1, n_heads // 16)))
     ax.set_yticks(range(0, n_layers, max(1, n_layers // 16)))
     ax.invert_yaxis()
-    plt.colorbar(im, ax=ax, shrink=0.6, label='Normal − Anomaly')
+    plt.colorbar(im, ax=ax, shrink=0.6, label='Std-penalized divergence')
 
     # Highlight selected heads with rectangles
     if important_heads and important_heads != "all":
@@ -109,7 +112,9 @@ def plot_top_heads_distribution(normal_heatmaps, anomaly_heatmaps, save_path, mo
         ax.hist(anomaly_scores, bins=30, alpha=0.6, color='red', label='Anomaly', density=True)
         ax.axvline(np.mean(normal_scores), color='blue', linestyle='--', linewidth=1.5)
         ax.axvline(np.mean(anomaly_scores), color='red', linestyle='--', linewidth=1.5)
-        ax.set_title(f'Layer {layer}, Head {head}\ndiv={divergence[layer, head]:.4f}')
+        ax.set_title(f'Layer {layer}, Head {head}\n'
+                     f'μ_N−μ_A={divergence[layer, head]:.4f}, '
+                     f'd={diff_signal[layer, head]:.4f}')
         ax.legend(fontsize=8)
 
     fig.suptitle(f'Top {top_k} Divergent Heads - {model_name} on {dataset}', fontsize=14)
@@ -120,9 +125,16 @@ def plot_top_heads_distribution(normal_heatmaps, anomaly_heatmaps, save_path, mo
 
 
 def plot_selected_heads_scores(normal_heatmaps, anomaly_heatmaps, important_heads, save_path, model_name, dataset):
-    """Plot 3: Combined score from selected heads for each sample."""
+    """Plot 3: Per-sample focus score FS(L) = mean over selected heads."""
     normal_scores = np.array([np.mean([h[l, hd] for l, hd in important_heads]) for h in normal_heatmaps])
     anomaly_scores = np.array([np.mean([h[l, hd] for l, hd in important_heads]) for h in anomaly_heatmaps])
+
+    # Methodology assumes normal logs yield HIGHER focus scores than anomalous
+    # (instruction-following stays intact). Warn if the data shows the opposite.
+    if np.mean(normal_scores) <= np.mean(anomaly_scores):
+        print(f"WARNING: anomaly mean focus ({np.mean(anomaly_scores):.4f}) >= "
+              f"normal mean focus ({np.mean(normal_scores):.4f}). "
+              f"Detector will need flip=True for this (model, dataset).")
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
