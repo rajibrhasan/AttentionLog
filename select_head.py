@@ -8,9 +8,9 @@ from detector.utils import process_attn, process_attn_prefill
 def find_pos_div_index(diff_map_mean, diff_map_std, n=2):
     pos_heads = (diff_map_mean -  n * diff_map_std) > 0
     indices = np.where(pos_heads)
-    index_pairs = [list(pair) for pair in zip(indices[0], indices[1])]
+    index_pairs = [[int(l), int(h)] for l, h in zip(indices[0], indices[1])]
     print(f"pos index: {len(index_pairs)}, total: {diff_map_mean.shape[0]*diff_map_mean.shape[1]}")
-    
+
     return index_pairs
 
 def find_top_div_index(diff_map_mean, diff_map_std, portion=0.1):
@@ -19,7 +19,9 @@ def find_top_div_index(diff_map_mean, diff_map_std, portion=0.1):
     total_heads = len(flattened_pos_heads)
     top_n = max(int(portion * total_heads), 1)
     top_indices = np.argpartition(flattened_pos_heads, -top_n)[-top_n:]
-    top_index_pairs = [list(np.unravel_index(idx, pos_heads.shape)) for idx in top_indices]
+    top_index_pairs = [[int(l), int(h)]
+                       for l, h in (np.unravel_index(idx, pos_heads.shape)
+                                    for idx in top_indices)]
 
     return top_index_pairs
 
