@@ -1,0 +1,14 @@
+**/.DS_Store
+**/__pycache__/
+/analysis
+/result
+
+analysis.txt
+analysis_bgl.txt
+analysis_hdfs.txt
+analysis_thunderbird.txt
+analysis_spirit.txt
+data/bgl/
+data/hdfs/
+data/thunderbird/
+data/spirit/
