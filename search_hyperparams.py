@@ -177,7 +177,8 @@ def evaluate_heads(heads, cal_normal_maps, cal_anomaly_maps,
 
 
 def search_hyperparams(model_name, dataset_name, instructions=None,
-                       num_data_values=None, n_cal=200, n_test_normal=500,
+                       num_data_values=None, head_methods=None,
+                       n_cal=200, n_test_normal=500,
                        n_test_anomaly=500, seed=42, output_path=None,
                        windowed=False, **dataset_paths):
     """
@@ -191,6 +192,8 @@ def search_hyperparams(model_name, dataset_name, instructions=None,
         instructions = DEFAULT_INSTRUCTIONS
     if num_data_values is None:
         num_data_values = DEFAULT_NUM_DATA_VALUES
+    if head_methods is None:
+        head_methods = HEAD_METHODS
 
     max_head_sel = max(num_data_values)
 
@@ -223,13 +226,13 @@ def search_hyperparams(model_name, dataset_name, instructions=None,
     # Step 3: Search
     all_results = []
     best_result = {"auc": -1}
-    total_combos = len(instructions) * len(num_data_values) * len(HEAD_METHODS)
+    total_combos = len(instructions) * len(num_data_values) * len(head_methods)
     combo_idx = 0
 
     print(f"\nTotal combinations: {total_combos}")
     print(f"  Instructions: {len(instructions)}")
     print(f"  num_data: {num_data_values}")
-    print(f"  Head methods: {len(HEAD_METHODS)}")
+    print(f"  Head methods: {len(head_methods)}")
     print("=" * 60)
 
     for instr_idx, instruction in enumerate(instructions):
@@ -266,7 +269,7 @@ def search_hyperparams(model_name, dataset_name, instructions=None,
 
             ratio = diff_map_mean.max() / (diff_map_std.mean() + 1e-8)
 
-            for method_name, method_params in HEAD_METHODS:
+            for method_name, method_params in head_methods:
                 combo_idx += 1
                 heads = select_heads(diff_map_mean, diff_map_std,
                                      method_name, method_params)
